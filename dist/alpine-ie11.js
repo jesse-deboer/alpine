@@ -7252,6 +7252,33 @@
     return new Proxy(target, proxyHandler);
   }
 
+  (function () {
+    var timeouts = [];
+    var messageName = "zero-timeout-message"; // Like setTimeout, but only takes a function argument.  There's
+    // no time argument (always zero) and no arguments (you have to
+    // use a closure).
+
+    function setZeroTimeout(fn) {
+      timeouts.push(fn);
+      window.postMessage(messageName, "*");
+    }
+
+    function handleMessage(event) {
+      if (event.source == window && event.data == messageName) {
+        event.stopPropagation();
+
+        if (timeouts.length > 0) {
+          var fn = timeouts.shift();
+          fn();
+        }
+      }
+    }
+
+    window.addEventListener("message", handleMessage, true); // Add the one thing we want added to the window object.
+
+    window.setZeroTimeout = setZeroTimeout;
+  })();
+
   var Component = /*#__PURE__*/function () {
     function Component(el) {
       var _this = this;
@@ -7369,17 +7396,17 @@
         initReturnedCallback.call(this.$data);
       }
 
-      componentForClone || setTimeout(function () {
+      componentForClone || setZeroTimeout(function () {
         var _this2 = this;
 
         _newArrowCheck(this, _this);
 
-        Alpine.onComponentInitializeds.forEach(function (callback) {
+        return Alpine.onComponentInitializeds.forEach(function (callback) {
           _newArrowCheck(this, _this2);
 
           return callback(this);
         }.bind(this));
-      }.bind(this), 0);
+      }.bind(this));
     }
 
     _createClass(Component, [{
